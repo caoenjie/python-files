@@ -337,10 +337,19 @@ class HUAWEI_WiFi_Management(object):
         
     
     def run(self):
+        os.system('udhcpc')
+        NetworkStatus = {}
+        NetworkStatus['Network'] = '4G'     
         status = False
         flaseTime = 0
         while True:
             status = self.IsWork()
+            NetworkStatus['Status'] = status
+            try:
+                with open('/tmp/stat/network.stat', 'w') as StatusFile:
+                    json.dump(NetworkStatus, StatusFile)
+            except Exception as e:
+                print('Network status write error ' + str(e))         
             if status:
                 time.sleep(300)
                 flaseTime = 0
@@ -357,7 +366,7 @@ class HUAWEI_WiFi_Management(object):
 
 if __name__ == "__main__":
     wifi =  HUAWEI_WiFi_Management()
-    # wifi.run()
+    wifi.run()
     # wifi.IsLogin()
-    wifi.IsReboot()
+    # wifi.IsReboot()
     # wifi.IsWork()  
