@@ -3,3 +3,4 @@
 
  HUAWEI 4g router
 	Simulated login and restart
+	add logger module

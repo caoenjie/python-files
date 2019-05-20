@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import json
 import urllib
+from logger import Logger
 try:
     # python3.x
     import urllib.request as urllib2
@@ -14,6 +15,7 @@ except ImportError:
     import urllib2 
     import cookielib
 
+log = Logger('huawei_debug.log', level='info')
 
 class HUAWEI_WiFi_Management(object):
     def __init__(self):
@@ -71,23 +73,23 @@ class HUAWEI_WiFi_Management(object):
         try:
             re = urllib2.urlopen(baidu_url, timeout=5).getcode()
             if re == 200:
-                print('work!')
+                log.logger.info('work!')
                 return True
             else:
                 try:
                     re = urllib2.urlopen(taobao_url, timeout=5).getcode()
                     if re == 200:
-                        print('work!')
+                        log.logger.info('work!')
                         return True
                     else:
                         return False
                 except:
                     return False
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: '+e.code)
             return False
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: '+ e.reason)
             return False
 
     def GetPostDate(self, request):
@@ -108,7 +110,7 @@ class HUAWEI_WiFi_Management(object):
         for item in cookie:
             if item.name == 'SessionID':
                 self.SessionID = 'SessionID='+item.value
-                # print(SessionID)
+                # log.logger.info(SessionID)
                 self.headers['Cookie'] = self.SessionID
                 return True
         return False
@@ -118,18 +120,18 @@ class HUAWEI_WiFi_Management(object):
             request = urllib2.Request(self.webserver_token_url)
             response = urllib2.urlopen(request)
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: '+e.code)
             return False
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: '+ e.reason)
             return False
             
         webserver_token = response.read().decode()
-        print(webserver_token)
+        log.logger.info(webserver_token)
         try:
-            # print(re.findall(r"<token>(.+?)</token>",webserver_token))
+            # log.logger.info(re.findall(r"<token>(.+?)</token>",webserver_token))
             Token = re.findall(r"<token>(.+?)</token>",webserver_token)
-            # print(Token[0][32:])
+            # log.logger.info(Token[0][32:])
             self.RequestVerificationToken = Token[0][32:]
             self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
             return True
@@ -142,12 +144,12 @@ class HUAWEI_WiFi_Management(object):
             response = urllib2.urlopen(request)
             content = response.read().decode()
         except urllib2.URLError as e:
-            print (e.reason)
+            log.logger.error (e.reason)
 
-        # print(content)
+        # log.logger.info(content)
         try:
             Token = re.findall(r"<meta name=\"csrf_token\" content=\"(.+?)\">",content)
-            print('%s %s '%(Token[0], Token[1]))
+            log.logger.info('%s %s '%(Token[0], Token[1]))
             self.RequestVerificationToken = Token[1] #onlineupg post
             self.headers['Referer'] = self.content_url
             self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
@@ -161,62 +163,62 @@ class HUAWEI_WiFi_Management(object):
 
     def TheFirstPost(self):
         privacynoticeinfo = self.GetPostDate('privacynoticeinfo')
-        # print(privacynoticeinfo)
-        print(self.headers['__RequestVerificationToken'])
+        # log.logger.info(privacynoticeinfo)
+        log.logger.info(self.headers['__RequestVerificationToken'])
         try:
             request = urllib2.Request(self.privacynoticeinfo_url,data = privacynoticeinfo.encode('utf-8'), headers = self.headers)
             response = urllib2.urlopen(request)
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: '+ e.code)
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: ' + e.reason)
                        
         #get response headers information
         self.RequestVerificationToken = response.info().getheader('__RequestVerificationToken')
-        print(self.RequestVerificationToken)
+        log.logger.info(self.RequestVerificationToken)
         
         #get token
         # for key, value in info.items():
-        #     print("%s = %s" % (key, value))
+        #     log.logger.info("%s = %s" % (key, value))
         #     if key == '__RequestVerificationToken':
         #         self.RequestVerificationToken = value
-        #         print(self.RequestVerificationToken)
+        #         log.logger.info(self.RequestVerificationToken)
         #         break
         self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
         #get response information
-        print(response.read().decode())
+        log.logger.info(response.read().decode())
 
         
     
     def TheSecondPost(self):
         challenge_login = self.GetPostDate('challenge_login')
-        print(self.headers['__RequestVerificationToken'])
+        log.logger.info(self.headers['__RequestVerificationToken'])
         try:
             self.firstnonce = re.findall(r"<firstnonce>(.+?)</firstnonce>",challenge_login)[0]
             request = urllib2.Request(self.challenge_login_url,data = challenge_login.encode('utf-8'), headers = self.headers)
             response = urllib2.urlopen(request)
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: '+e.code)
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: '+ e.reason)
         #get response headers information
         self.RequestVerificationToken = response.info().getheader('__RequestVerificationToken')
-        print(self.RequestVerificationToken)
+        log.logger.info(self.RequestVerificationToken)
         #get token
         # for key, value in info.items():
-        #     # print("%s = %s" % (key, value))
+        #     # log.logger.info("%s = %s" % (key, value))
         #     if key == '__RequestVerificationToken':
         #         self.RequestVerificationToken = value
-        #         # print(RequestVerificationToken)
+        #         # log.logger.info(RequestVerificationToken)
         #         break
         self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
         #get response information
-        # print(response.read().decode())
+        # log.logger.info(response.read().decode())
         re_servernonce = response.read().decode()
-        print(re_servernonce)
+        log.logger.info(re_servernonce)
         try:
             self.servernonce = re.findall(r"<servernonce>(.+?)</servernonce>",re_servernonce)[0]
-        # print(servernonce)
+        # log.logger.info(servernonce)
             self.finalnonce = self.servernonce
         except:
             pass
@@ -230,50 +232,50 @@ class HUAWEI_WiFi_Management(object):
         ckey = "71b26f7f2499aca61c04fdcee4f3791b21f11b0d65a1a0b449307c42b22ef8e5"
 
         news=bytearray.fromhex(message)
-        # print(news)     
+        # log.logger.info(news)     
         skey = self.firstnonce + ',' + self.finalnonce + ',' + self.finalnonce
         signature = hmac.new(bytearray(skey, encoding = "utf8"),msg=news, digestmod=hashlib.sha256).hexdigest()
 
-        # print(signature)
+        # log.logger.info(signature)
         re_signature = (hex(int(ckey,16) ^ int(signature,16))) #int(long)
-        # print(re_signature)
-        # print(type(re_signature))
-        # print(re_signature[2:])
+        # log.logger.info(re_signature)
+        # log.logger.info(type(re_signature))
+        # log.logger.info(re_signature[2:])
         clientproof = re_signature[2:-1] #  Only applicable to python2.x ,"0x--str--L"
 
 
         authentication_login = re.sub(r'<clientproof>(.+?)</clientproof>', '<clientproof>' + clientproof + '</clientproof>', authentication_login)
 
-        print(authentication_login)
+        log.logger.info(authentication_login)
 
-        print(self.headers['__RequestVerificationToken'])
-        print(json.dumps(self.headers))
+        log.logger.info(self.headers['__RequestVerificationToken'])
+        log.logger.info(json.dumps(self.headers))
         try:
             request = urllib2.Request(self.authentication_login_url,data = authentication_login.encode('utf-8'), headers = self.headers)
             response = urllib2.urlopen(request)
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: ' + e.code)
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: ' + e.reason)
         #get response headers information
         
         re_cookie = response.info().getheader('Set-Cookie')
         if re_cookie != None:
-            print(re_cookie)
+            log.logger.info(re_cookie)
             re_SessionID = re.findall(r"SessionID=(.+?);",re_cookie)[0]
             self.SessionID = 'SessionID=' + re_SessionID
-            print(self.SessionID)
+            log.logger.info(self.SessionID)
         #get token
         # for key, value in info.items():
-        #     # print("%s = %s" % (key, value))
+        #     # log.logger.info("%s = %s" % (key, value))
         #     if key == 'Set-Cookie':
         #         re_SessionID = re.findall(r"SessionID=(.+?);",value)[0]
         #         self.SessionID = 'SessionID=' + re_SessionID
-        #         print(self.SessionID)
+        #         log.logger.info(self.SessionID)
         #         break
         self.headers['Cookie'] = self.SessionID
         self.content_headers['Cookie'] = self.SessionID
-        print(response.read().decode())
+        log.logger.info(response.read().decode())
 
 
     def onlineupgPost(self):
@@ -282,21 +284,21 @@ class HUAWEI_WiFi_Management(object):
             request = urllib2.Request(self.onlineupg_url, data = json.dumps(onlinupg_login).encode('utf-8'), headers = self.headers)
             response = urllib2.urlopen(request)
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: ' + e.code)
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)
+            log.logger.error('Reason: ' + e.reason)
 
         self.RequestVerificationToken = response.info().getheader('__RequestVerificationToken')
-        print(self.RequestVerificationToken)
+        log.logger.info(self.RequestVerificationToken)
         #get token
         # for key, value in info.items():
-        #     # print("%s = %s" % (key, value))
+        #     # log.logger.info("%s = %s" % (key, value))
         #     if key == '__RequestVerificationToken':
         #         self.RequestVerificationToken = value
-        #         # print(RequestVerificationToken)
+        #         # log.logger.info(RequestVerificationToken)
         #         break
         self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
-        print(response.read().decode())
+        log.logger.info(response.read().decode())
     
     def RebootPost(self):
         #reboot
@@ -305,16 +307,16 @@ class HUAWEI_WiFi_Management(object):
             request = urllib2.Request(self.reboot_url,data = reboot_login.encode('utf-8'), headers = self.headers)
             response = urllib2.urlopen(request)    
         except urllib2.HTTPError as e:
-            print('Error code: ',e.code)
+            log.logger.error('Error code: '+e.code)
         except urllib2.URLError as e:
-            print('Reason: ', e.reason)  
+            log.logger.error('Reason: '+ e.reason)  
         
         # info = response.info()
-        # print(info)
+        # log.logger.info(info)
         re = response.read().decode()
-        print(re)
+        log.logger.info(re)
         if "<response>OK</response>" in re:
-            print("reboot success")
+            log.logger.info("reboot success")
             return True
         else:
             return False
@@ -349,7 +351,7 @@ class HUAWEI_WiFi_Management(object):
                 with open('/tmp/stat/network.stat', 'w') as StatusFile:
                     json.dump(NetworkStatus, StatusFile)
             except Exception as e:
-                print('Network status write error ' + str(e))         
+                log.logger.error('Network status write error ' + str(e))         
             if status:
                 time.sleep(300)
                 flaseTime = 0
