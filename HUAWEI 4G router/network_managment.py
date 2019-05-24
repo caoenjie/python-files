@@ -5,6 +5,7 @@ import hmac
 import hashlib
 import json
 import urllib
+import socket
 from logger import Logger
 try:
     # python3.x
@@ -68,29 +69,26 @@ class HUAWEI_WiFi_Management(object):
     
 
     def IsWork(self):
-        baidu_url = "http://www.baidu.com"     #http
-        taobao_url = "http://www.taobao.com/"  #http
+        baidu = "www.baidu.com"     #http
+        taobao = "www.taobao.com"  #http
+        s=socket.socket()
+        s.settimeout(5)
         try:
-            re = urllib2.urlopen(baidu_url, timeout=5).getcode()
-            if re == 200:
+            s.connect((baidu,443))  
+            s.close()
+            log.logger.info('work!')
+            return True
+        except Exception as e:
+            log.logger.error('baidu connect failed!')
+            time.sleep(5)
+            try:
+                s.connect((taobao,443))
+                s.close()
                 log.logger.info('work!')
                 return True
-            else:
-                try:
-                    re = urllib2.urlopen(taobao_url, timeout=5).getcode()
-                    if re == 200:
-                        log.logger.info('work!')
-                        return True
-                    else:
-                        return False
-                except:
-                    return False
-        except urllib2.HTTPError as e:
-            log.logger.error('Error code: '+e.code)
-            return False
-        except urllib2.URLError as e:
-            log.logger.error('Reason: '+ e.reason)
-            return False
+            except Exception as e:
+                log.logger.error('taobao connect failed!')
+                return False
 
     def GetPostDate(self, request):
 
