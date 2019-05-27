@@ -11,10 +11,12 @@ try:
     # python3.x
     import urllib.request as urllib2
     import http.cookiejar as cookielib
+    import http.client as httplib
 except ImportError:
     # python2.x
     import urllib2 
     import cookielib
+    import httplib
 
 log = Logger('huawei_debug.log', level='info')
 
@@ -68,27 +70,31 @@ class HUAWEI_WiFi_Management(object):
         } 
     
 
-    def IsWork(self):
+    def IsWork(self, path = "/"):
         baidu = "www.baidu.com"     #http
         taobao = "www.taobao.com"  #http
-        s=socket.socket()
-        s.settimeout(5)
         try:
-            s.connect((baidu,443))  
-            s.close()
-            log.logger.info('work!')
-            return True
-        except Exception as e:
-            log.logger.error('baidu connect failed!')
-            time.sleep(5)
-            try:
-                s.connect((taobao,443))
-                s.close()
+            conn = httplib.HTTPConnection(baidu)
+            conn.request("HEAD", "/")
+            state = conn.getresponse().status
+            if state == 200:
                 log.logger.info('work!')
                 return True
-            except Exception as e:
-                log.logger.error('taobao connect failed!')
-                return False
+            else:
+                log.logger.error('baidu connect failed')
+                time.sleep(5)
+                conn = httplib.HTTPConnection(taobao)
+                conn.request("HEAD", "/")
+                state = conn.getresponse().status
+                if state == 200:
+                    log.logger.info('work!')
+                    return True
+                else:
+                    log.logger.error('toabao connect failed')
+                    return False      
+        except httplib.HTTPException as e:
+            log.logger.error(e)
+            return False
 
     def GetPostDate(self, request):
 
@@ -124,7 +130,7 @@ class HUAWEI_WiFi_Management(object):
             log.logger.error('Reason: '+ e.reason)
             return False
             
-        webserver_token = response.read().decode()
+        webserver_token = response.read().decode('utf8')
         log.logger.info(webserver_token)
         try:
             # log.logger.info(re.findall(r"<token>(.+?)</token>",webserver_token))
@@ -140,7 +146,7 @@ class HUAWEI_WiFi_Management(object):
         request = urllib2.Request(self.content_url,headers=self.content_headers)
         try:
             response = urllib2.urlopen(request)
-            content = response.read().decode()
+            content = response.read().decode('utf8')
         except urllib2.URLError as e:
             log.logger.error (e.reason)
 
@@ -184,7 +190,7 @@ class HUAWEI_WiFi_Management(object):
         #         break
         self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
         #get response information
-        log.logger.info(response.read().decode())
+        log.logger.info(response.read().decode('utf8'))
 
         
     
@@ -212,7 +218,7 @@ class HUAWEI_WiFi_Management(object):
         self.headers['__RequestVerificationToken'] = self.RequestVerificationToken
         #get response information
         # log.logger.info(response.read().decode())
-        re_servernonce = response.read().decode()
+        re_servernonce = response.read().decode('utf8')
         log.logger.info(re_servernonce)
         try:
             self.servernonce = re.findall(r"<servernonce>(.+?)</servernonce>",re_servernonce)[0]
@@ -351,7 +357,7 @@ class HUAWEI_WiFi_Management(object):
             except Exception as e:
                 log.logger.error('Network status write error ' + str(e))         
             if status:
-                time.sleep(300)
+                time.sleep(900) #15mins
                 flaseTime = 0
             else:
                 flaseTime += 1
